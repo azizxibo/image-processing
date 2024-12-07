@@ -54,7 +54,7 @@ if uploaded_file is not None:
     st.image(img_rotated, caption="Rotated Image", use_column_width=True)
     
     # Pengaturan Zoom
-    zoom_factor = st.slider("Zoom In/Out", 0.1, 3.0, 1.0)
+    zoom_factor = st.slider("Zoom In/Out", 1.0, 10.0, 1.0)
     img_zoomed = zoom_image(img_rotated, zoom_factor)
     st.image(img_zoomed, caption="Zoomed Image", use_column_width=True)
     
