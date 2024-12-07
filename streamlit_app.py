@@ -1,46 +1,70 @@
 import streamlit as st
-from rembg import remove
-from PIL import Image
-from io import BytesIO
-import base64
+from PIL import Image, ImageEnhance
+import numpy as np
+import io
 
-st.set_page_config(layout="wide", page_title="Image Background Remover")
+# Fungsi untuk memuat gambar
+def load_image(image_file):
+    img = Image.open(image_file)
+    return img
 
-st.write("## Remove background from your image")
-st.write(
-    ":dog: Try uploading an image to watch the background magically removed. Full quality images can be downloaded from the sidebar. This code is open source and available [here](https://github.com/tyler-simons/BackgroundRemoval) on GitHub. Special thanks to the [rembg library](https://github.com/danielgatis/rembg) :grin:"
-)
-st.sidebar.write("## Upload and download :gear:")
+# Fungsi untuk mengatur kecerahan gambar
+def adjust_brightness(img, factor):
+    enhancer = ImageEnhance.Brightness(img)
+    return enhancer.enhance(factor)
 
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+# Fungsi untuk merotasi gambar
+def rotate_image(img, angle):
+    return img.rotate(angle)
 
-# Download the fixed image
-def convert_image(img):
-    buf = BytesIO()
-    img.save(buf, format="PNG")
-    byte_im = buf.getvalue()
-    return byte_im
+# Fungsi untuk memperbesar atau memperkecil gambar
+def zoom_image(img, zoom_factor):
+    width, height = img.size
+    new_width = int(width * zoom_factor)
+    new_height = int(height * zoom_factor)
+    return img.resize((new_width, new_height))
 
+# Fungsi untuk mengonversi gambar ke format byte agar bisa di-download
+def convert_image_to_bytes(img):
+    img_byte_arr = io.BytesIO()
+    img.save(img_byte_arr, format='PNG')
+    img_byte_arr.seek(0)
+    return img_byte_arr
 
-def fix_image(upload):
-    image = Image.open(upload)
-    col1.write("Original Image :camera:")
-    col1.image(image)
+# Layout Streamlit
+st.title("Image Editor")
+st.write("Upload an image to edit its brightness, rotate, or zoom.")
 
-    fixed = remove(image)
-    col2.write("Fixed Image :wrench:")
-    col2.image(fixed)
-    st.sidebar.markdown("\n")
-    st.sidebar.download_button("Download fixed image", convert_image(fixed), "fixed.png", "image/png")
+# Upload gambar
+uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "png", "jpeg"])
 
-
-col1, col2 = st.columns(2)
-my_upload = st.sidebar.file_uploader("Upload an image", type=["png", "jpg", "jpeg"])
-
-if my_upload is not None:
-    if my_upload.size > MAX_FILE_SIZE:
-        st.error("The uploaded file is too large. Please upload an image smaller than 5MB.")
-    else:
-        fix_image(upload=my_upload)
-else:
-    fix_image("./gambar2.jpg")
+if uploaded_file is not None:
+    # Load image
+    img = load_image(uploaded_file)
+    st.image(img, caption="Original Image", use_column_width=True)
+    
+    # Pengaturan kecerahan
+    brightness_factor = st.slider("Adjust Brightness", 0.1, 2.0, 1.0)
+    img_bright = adjust_brightness(img, brightness_factor)
+    st.image(img_bright, caption="Brightness Adjusted", use_column_width=True)
+    
+    # Pengaturan rotasi
+    rotation_angle = st.slider("Rotate Image", 0, 360, 0)
+    img_rotated = rotate_image(img_bright, rotation_angle)
+    st.image(img_rotated, caption="Rotated Image", use_column_width=True)
+    
+    # Pengaturan Zoom
+    zoom_factor = st.slider("Zoom In/Out", 0.1, 3.0, 1.0)
+    img_zoomed = zoom_image(img_rotated, zoom_factor)
+    st.image(img_zoomed, caption="Zoomed Image", use_column_width=True)
+    
+    # Konversi gambar yang sudah diubah menjadi format byte untuk download
+    img_for_download = convert_image_to_bytes(img_zoomed)
+    
+    # Tombol download
+    st.download_button(
+        label="Download Edited Image",
+        data=img_for_download,
+        file_name="edited_image.png",
+        mime="image/png"
+    )
