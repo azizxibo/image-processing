@@ -25,9 +25,14 @@ def zoom_image(img, zoom_factor):
     return img.resize((new_width, new_height))
 
 # Fungsi untuk mengonversi gambar ke format byte agar bisa di-download
-def convert_image_to_bytes(img):
+def convert_image_to_bytes(img, format_type):
     img_byte_arr = io.BytesIO()
-    img.save(img_byte_arr, format='PNG')
+    if format_type == "PNG":
+        img.save(img_byte_arr, format='PNG')
+    elif format_type == "JPEG":
+        img.save(img_byte_arr, format='JPEG')
+    elif format_type == "PDF":
+        img.save(img_byte_arr, format='PDF')
     img_byte_arr.seek(0)
     return img_byte_arr
 
@@ -54,17 +59,20 @@ if uploaded_file is not None:
     st.image(img_rotated, caption="Rotated Image", use_column_width=True)
     
     # Pengaturan Zoom
-    zoom_factor = st.slider("Zoom In/Out", 1.0, 10.0, 1.0)
+    zoom_factor = st.slider("Zoom In/Out", 0.1, 3.0, 1.0)
     img_zoomed = zoom_image(img_rotated, zoom_factor)
     st.image(img_zoomed, caption="Zoomed Image", use_column_width=True)
     
+    # Pilihan format gambar untuk diunduh
+    format_type = st.selectbox("Choose image format to download", ["PNG", "JPEG", "PDF"])
+    
     # Konversi gambar yang sudah diubah menjadi format byte untuk download
-    img_for_download = convert_image_to_bytes(img_zoomed)
+    img_for_download = convert_image_to_bytes(img_zoomed, format_type)
     
     # Tombol download
     st.download_button(
-        label="Download Edited Image",
+        label=f"Download Image as {format_type}",
         data=img_for_download,
-        file_name="edited_image.png",
-        mime="image/png"
+        file_name=f"edited_image.{format_type.lower()}",
+        mime=f"image/{format_type.lower()}" if format_type != "PDF" else "application/pdf"
     )
